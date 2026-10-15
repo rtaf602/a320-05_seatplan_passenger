@@ -8,9 +8,12 @@
 var FONT='Tahoma';
 var C={ink:'14212E',muted:'566575',line:'C5D0DC',rowno:'35547C',cabin:'EEF4FA',accent:'1F5FA8',white:'FFFFFF',
   ok:'2E9D57',warn:'E2A400',bad:'D23B33',badSoft:'FBDAD7',crew:'D0102A',crewSoft:'FDE3E6',warnSoft:'FDF0C4'};
-// A320(05) columns: A margin · B row no · C D E left (A B C) · F aisle · G H I right (D E F) · J margin
-var COLS=[1.5,6,12,12,12,3,12,12,12,2];
-var GROUP=[[3,4,5],[7,8,9]],FIRST=2,LAST=10,EDGE=10;
+// A320(05) columns (same grid as the technician sheet "ผังที่นั่ง"): A margin · B row no · C-H left side (6 half-columns, a seat spans 2)
+// · I aisle · J-O right side · P margin
+var COLS=[1.5,6,6.2,6.2,6.2,6.2,6.2,6.2,3.5,6.2,6.2,6.2,6.2,6.2,6.2,1.5];
+var FIRST=2,LAST=16,EDGE=16,BOX1=3,BOX2=15;
+function col(side,c){return side==='L'?2+c:9+c}
+var MTC={w21:'8ED873',w27:'9FC5E8',b12:'B4A7D6'};
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'')}
 function colName(c){var s='';while(c>0){var m=(c-1)%26;s=String.fromCharCode(65+m)+s;c=(c-m-1)/26}return s}
@@ -98,7 +101,7 @@ function build(m){
   /* header */
   var b0=blockStart();R=sh.row;
   sh.merge(R,2,R,LAST,m.title,S.title);sh.h(R,24);R++;
-  var slots=[[2,3],[4,5],[6,7],[8,10]];
+  var slots=[[2,5],[6,9],[10,13],[14,16]];
   function infoCell(r,slot,span,label,val){var c1=slots[slot][0],c2=slots[slot+span-1][1];
     sh.merge(r,c1,r,c2,label,mergeStyle(S.lab,{border:{t:['thin',C.line]}}));sh.merge(r+1,c1,r+1,c2,val||'-',S.val);
     sh.box(r,c1,r+1,c2,'thin',C.line)}
@@ -110,45 +113,39 @@ function build(m){
   /* zones */
   m.zones.forEach(function(z){
     var b=blockStart();R=sh.row;
-    sh.style(R,FIRST,R,LAST,S.cabin);sh.merge(R,FIRST,R,6,z.title,S.zoneTitle);
-    sh.merge(R,8,R,10,'ที่นั่งว่าง '+z.free,z.free?S.badge:S.badgeZero);sh.h(R,20);R++;
+    sh.style(R,FIRST,R,LAST,S.cabin);sh.merge(R,FIRST,R,11,z.title,S.zoneTitle);
+    sh.merge(R,13,R,LAST,'ที่นั่งว่าง '+z.free,z.free?S.badge:S.badgeZero);sh.h(R,20);R++;
     sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,5);R++;
-    var run=null;
-    function endRun(){if(run){sh.box(run[0],3,R-1,9,'medium',C.crew);run=null}}
-    z.items.forEach(function(it){
-      if(it.crew&&!run){sh.style(R,FIRST,R,LAST,S.cabin);sh.merge(R,3,R,9,'CREW ZONE',{font:{b:1,sz:13,color:C.crew},fill:C.crewSoft,align:{h:'center'}});sh.h(R,20);run=[R];R++}
-      if(!it.crew)endRun();
-      if(it.type==='mon'){
-        sh.style(R,FIRST,R,LAST,S.cabin);
-        it.mons.forEach(function(mv,gi){if(mv==null)return;var g=GROUP[gi];
-          sh.merge(R,g[0],R,g[2],it.label,{font:{b:1,sz:7,color:mv===2?C.white:C.ink},fill:MONC[mv|0],align:{h:'center'}})});
-        sh.h(R,13);R++;
-        sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,3);R++;return;
-      }
-      if(it.type==='deco'){
-        sh.style(R,FIRST,R,LAST,S.cabin);
-        it.groups.forEach(function(t,gi){if(t!=='T')return;var g=GROUP[gi];sh.merge(R,g[0],R,g[2],'TABLE',S.table)});
-        sh.h(R,16);R++;sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,4);R++;return;
-      }
-      sh.style(R,FIRST,R+1,LAST,S.cabin);
-      sh.merge(R,2,R+1,2,it.n,S.rowno);
-      it.groups.forEach(function(g,gi){var cols=GROUP[gi];
-        if(g==='T'){sh.merge(R,cols[0],R+1,cols[2],'TABLE',S.table);return}
-        if(g&&g.cc){seatCells(sh,R,cols[0],g.cc,blank,cols[1]);
-          sh.merge(R,cols[2],R+1,cols[2],g.label,{font:{b:1,sz:8,color:C.muted},fill:C.cabin,align:{h:'center',v:'center',wrap:1}});
-          sh.box(R,cols[0],R+1,cols[2],'medium',C.muted);return}
-        g.forEach(function(seat,i){if(seat)seatCells(sh,R,cols[i],seat,blank)})});
-      sh.h(R,15);sh.h(R+1,26);R+=2;
+    var run=null,room=null;
+    function endRun(){if(run){sh.box(run[0],BOX1,R-1,BOX2,'medium',C.crew);run=null}}
+    function endRoom(){if(room){sh.box(room[0],col('L',1),R-1,col('L',6),'medium',C.rowno);room=null}}
+    z.lines.forEach(function(ln){
+      if(!ln.room)endRoom();
+      if(ln.crew&&!run){endRoom();sh.style(R,FIRST,R,LAST,S.cabin);sh.merge(R,BOX1,R,BOX2,'CREW ZONE',{font:{b:1,sz:13,color:C.crew},fill:C.crewSoft,align:{h:'center'}});sh.h(R,20);run=[R];R++}
+      if(!ln.crew)endRun();
+      if(ln.room&&!room){sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,4);room=[R];R++}
+      var two=ln.t==='row'&&ln.cells.some(function(c){return c.seat});
+      sh.style(R,FIRST,R+(two?1:0),LAST,S.cabin);
+      if(ln.n)sh.merge(R,2,R+(two?1:0),2,ln.n,S.rowno);
+      ln.cells.forEach(function(c){var c1=col(c.side,c.c),c2=c1+c.span-1;
+        if(c.seat){seatCells(sh,R,c1,c.seat,blank,c2);return}
+        if(c.mon){var mv=c.mon.m|0,bin=c.mon.type==='b12';
+          sh.merge(R,c1,R,c2,c.mon.label,{font:{b:1,sz:bin?6:7,color:mv===2?C.white:C.ink},fill:mv?MONC[mv]:MTC[c.mon.type],align:{h:'center',v:'center'}});return}
+        if(c.table){sh.merge(R,c1,R+(two?1:0),c2,'TABLE',S.table);return}
+        if(c.text)sh.merge(R,c1,R,c2,c.text,{font:{b:1,sz:8,color:C.rowno},fill:C.cabin,align:{h:'center',v:'center'}});
+      });
+      if(two){sh.h(R,15);sh.h(R+1,26);R+=2}
+      else{sh.h(R,ln.t==='mon'?(ln.cells.some(function(c){return c.mon&&c.mon.type==='b12'})?10:13):ln.t==='title'?14:20);R++}
       sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,4);R++;
     });
-    endRun();
+    endRoom();endRun();
     sh.style(R,FIRST,R,LAST,S.cabin);sh.h(R,6);R++;
     sh.box(b,FIRST,R-1,LAST,'thin',C.line);
     sh.row=R;blockEnd(b);
   });
   /* list */
   var CH=32,list=m.list,rows=blank?Array.apply(null,Array(m.blankRows||30)).map(function(){return null}):list;
-  var cols=[[2,2,'ที่นั่ง'],[3,4,'โซน'],[5,6,'ยศ ชื่อ-สกุล (ไทย)'],[7,10,'RANK NAME (EN)']];
+  var cols=[[2,3,'ที่นั่ง'],[4,7,'โซน'],[8,11,'ยศ ชื่อ-สกุล (ไทย)'],[12,16,'RANK NAME (EN)']];
   if(!rows.length){var b1=blockStart();R=sh.row;sh.merge(R,2,R,LAST,m.listTitle,S.h2);sh.h(R,20);R++;sh.merge(R,2,R,LAST,'ยังไม่มีรายชื่อ',S.meta);R++;sh.row=R;blockEnd(b1)}
   for(var i=0;i<rows.length;i+=CH){
     var bb=blockStart();R=sh.row;

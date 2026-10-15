@@ -10,6 +10,7 @@ img{max-width:100%}
   --crew:#d0102a; --crew-soft:#fde3e6; --gold:#b8913a; --navy:#0e1d3c;
   /* plain rgba (no color-mix): html2canvas used by EXPORT TO PDF cannot read color-mix() */
   --room-bg:rgba(255,255,255,.55); --crew-tint:rgba(253,227,230,.45);
+  --mon21:#8ed873; --mon27:#9fc5e8; --monb:#b4a7d6;
   --sans:"IBM Plex Sans Thai","Noto Sans Thai",Tahoma,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   color-scheme:light;
 }
@@ -17,12 +18,12 @@ img{max-width:100%}
   --bg:#0e151c; --panel:#17212b; --cabin:#1c2a38; --ink:#e6edf4; --muted:#9aa9b8; --faint:#62717f; --line:#33455a;
   --accent:#6aa9ee; --accent-ink:#08131f; --rowno:#9dbde6; --seat:#223142;
   --ok:#3fb56c; --ok-soft:#173a26; --warn:#e9b422; --warn-soft:#40330d; --bad:#ea5a52; --bad-soft:#451b19;
-  --crew:#ff5a6e; --crew-soft:#3d1a20; --gold:#d6b25e; --room-bg:rgba(23,33,43,.55); --crew-tint:rgba(61,26,32,.45); color-scheme:dark } }
+  --crew:#ff5a6e; --crew-soft:#3d1a20; --gold:#d6b25e; --room-bg:rgba(23,33,43,.55); --crew-tint:rgba(61,26,32,.45); --mon21:#5e9e4a; --mon27:#4f81ad; --monb:#7a6bb0; color-scheme:dark } }
 :root[data-theme="dark"]{
   --bg:#0e151c; --panel:#17212b; --cabin:#1c2a38; --ink:#e6edf4; --muted:#9aa9b8; --faint:#62717f; --line:#33455a;
   --accent:#6aa9ee; --accent-ink:#08131f; --rowno:#9dbde6; --seat:#223142;
   --ok:#3fb56c; --ok-soft:#173a26; --warn:#e9b422; --warn-soft:#40330d; --bad:#ea5a52; --bad-soft:#451b19;
-  --crew:#ff5a6e; --crew-soft:#3d1a20; --gold:#d6b25e; --room-bg:rgba(23,33,43,.55); --crew-tint:rgba(61,26,32,.45); color-scheme:dark }
+  --crew:#ff5a6e; --crew-soft:#3d1a20; --gold:#d6b25e; --room-bg:rgba(23,33,43,.55); --crew-tint:rgba(61,26,32,.45); --mon21:#5e9e4a; --mon27:#4f81ad; --monb:#7a6bb0; color-scheme:dark }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5}
 .wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:0 48px;display:flex;flex-direction:column;gap:20px}
@@ -77,7 +78,8 @@ select option{color:var(--ink);font-weight:500}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:16px;height:16px;border-radius:3px;display:inline-block;flex:none}
-.sw.mon{width:12px;height:6px;border-radius:2px;margin-right:-3px}
+.sw.lg{width:26px;height:12px;border-radius:3px}
+.sw.lg+.sw.lg{margin-left:-2px}
 .sw-empty{background:var(--seat);border:1.5px solid var(--rowno)}
 .sw-occ{background:var(--accent)}
 .sw-warn{background:linear-gradient(to top,var(--warn) 4px,var(--seat) 4px);border:1.5px solid var(--rowno)}
@@ -92,17 +94,17 @@ select option{color:var(--ink);font-weight:500}
 .badge{font-family:var(--mono);font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-ink);padding:3px 9px;border-radius:4px;white-space:nowrap}
 .badge b{font-size:15px}
 .badge.zero{background:var(--muted)}
-.rows{--sg:clamp(3px,1vw,7px);--sw:clamp(30px,calc((100vw - 130px)/6.6),54px);display:flex;flex-direction:column;gap:8px;align-items:center}
-.row{display:flex;align-items:flex-end;gap:clamp(2px,1vw,6px);justify-content:center;width:100%}
-.rowno{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--rowno);width:clamp(18px,5vw,30px);text-align:right;padding-bottom:9px;flex:none}
-.aisle{width:clamp(6px,3vw,26px);flex:none}
-.gap{flex:none;width:var(--sw)}
-.grp{display:flex;align-items:flex-end;justify-content:center;gap:var(--sg);flex:none;position:relative}
+/* cabin grid (same proportions as the technician web a320-05_seatplan): each side = 6 half-columns, a seat spans 2 */
+.rows{--sg:clamp(3px,1vw,8px);--sw:clamp(34px,calc((100vw - 140px)/7),54px);--rn:clamp(18px,5vw,30px);--ai:clamp(14px,5vw,48px);display:flex;flex-direction:column;gap:8px;align-items:center}
+.row{display:flex;align-items:stretch;justify-content:center;position:relative;z-index:1}
+.rowno{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--rowno);width:var(--rn);padding-right:6px;text-align:right;flex:none;align-self:center}
+.aisle{width:var(--ai);flex:none}
+.side{flex:none;display:grid;grid-template-columns:repeat(6,calc((var(--sw) + var(--sg)) / 2));align-items:end}
+.cell{display:flex;justify-content:center;align-items:flex-end;padding:0 calc(var(--sg) / 2);min-width:0}
+.cell.txt{font-size:11px;font-weight:600;color:var(--rowno);line-height:1.2;text-align:center;align-items:center}
 .seat{flex:none;width:var(--sw);padding:0;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;gap:3px;align-items:stretch;position:relative}
-.seat .m{height:6px;border-radius:2px;background:var(--ok);margin-inline:15%}
-.seat[data-m="1"] .m,.ovh[data-m="1"]{background:var(--warn)}
-.seat[data-m="2"] .m,.ovh[data-m="2"]{background:var(--bad);color:#fff}
-.seat .s{min-height:38px;border-radius:6px 6px 3px 3px;background:var(--seat);color:var(--rowno);font-family:var(--mono);font-weight:600;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--rowno);position:relative;overflow:hidden}
+.seat.wide{width:100%}
+.seat .s{min-height:40px;border-radius:6px 6px 3px 3px;background:var(--seat);color:var(--rowno);font-family:var(--mono);font-weight:600;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--rowno);position:relative;overflow:hidden}
 .seat:hover .s{box-shadow:0 0 0 2px var(--ink)}
 .seat.occ .s{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* แถบสีเหลืองล่างที่นั่งขัดข้อง: ใช้ ::before แทน inset box-shadow เพราะ html2canvas (EXPORT TO PDF) วาด inset shadow เต็มช่อง */
@@ -115,20 +117,20 @@ select option{color:var(--ink);font-weight:500}
 .seat.crew{cursor:not-allowed}
 .seat.crew .s{background:repeating-linear-gradient(135deg,var(--crew-soft) 0 4px,transparent 4px 8px);border-color:var(--crew);color:var(--crew);opacity:.8}
 .seat .nm{display:none}
-.seat[data-pending] .s,.ovh[data-pending]{outline:2px dashed var(--accent);outline-offset:2px}
-/* A320: every group is 3 slots wide (A B C · D E F), so rows line up even when a VIP row has 1-2 seats */
-.grp.wide{width:calc(3 * var(--sw) + 2 * var(--sg));justify-content:flex-start}
-/* Commander Center room (CC 1A) fills the left group */
-.ccroom{display:flex;align-items:flex-end;gap:8px;width:100%;box-sizing:border-box;border:2px solid var(--muted);border-radius:10px;padding:6px 8px;background:var(--room-bg)}
-.cclabel{height:38px;display:flex;align-items:center;font-size:11px;line-height:1.15;font-weight:600;color:var(--muted)}
-.table{width:100%;height:30px;display:flex;align-items:center;justify-content:center;border:1px dashed var(--line);border-radius:6px;background:var(--bg);color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.12em}
-.decorow{height:30px}
-.decorow .rowno{padding:0}
-.ovhrow{align-items:center;height:22px;margin-block:2px}
-.ovhrow .rowno{padding:0}
-.ovhrow .gap{height:1px}
-.ovh{border:0;background:var(--ok);color:#10202b;font-size:11px;font-weight:600;border-radius:3px;padding:2px 6px;position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;white-space:nowrap;overflow:hidden;cursor:default}
-.ovhrow .grp{height:22px}
+.seat[data-pending] .s{outline:2px dashed var(--accent);outline-offset:2px}
+/* monitors: small label coloured by type (like the sheet); degraded / broken = yellow / red · OVHD = thin bar across the seat group */
+.r-mon .cell{align-items:center}
+.ovh{display:inline-block;border:0;background:var(--mon21);color:#10202b;font-size:11px;font-weight:600;line-height:16px;border-radius:3px;padding:3px 12px;white-space:nowrap;cursor:default}
+.ovh.t-w27{background:var(--mon27)}
+.ovh.bin{display:block;width:100%;background:var(--monb);border-radius:8px;padding:1px 0;font-size:9px;font-weight:700;letter-spacing:.12em;line-height:14px;text-align:center}
+.ovh[data-m="1"]{background:var(--warn)}
+.ovh[data-m="2"]{background:var(--bad);color:#fff}
+/* table: dashed box, as wide as its cells */
+.tbl{width:100%;height:40px;border:2px dashed var(--muted);border-radius:6px;background:var(--panel);color:var(--muted);font-size:clamp(8px,2.2vw,10px);font-weight:700;letter-spacing:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.r-deco .tbl{height:34px}
+/* Commander Center room: a box behind the left side of its lines */
+.roomwrap{position:relative;display:flex;flex-direction:column;gap:8px;padding-block:6px}
+.roombox{position:absolute;top:0;bottom:0;left:var(--rn);width:calc(3 * var(--sw) + 3 * var(--sg));border:2px solid var(--rowno);border-radius:8px;background:var(--room-bg);pointer-events:none}
 /* CREW ZONE box around blocked rows */
 .crewbox{position:relative;width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;border:3px solid var(--crew);border-radius:10px;padding:34px 6px 10px;background:var(--crew-tint)}
 .crewbox>.crewlbl{position:absolute;top:4px;left:0;right:0;text-align:center;font:700 22px/1 var(--sans);letter-spacing:.18em;color:var(--crew);pointer-events:none}
@@ -235,6 +237,7 @@ dialog.wide[open]{display:flex;flex-direction:column}
 .report{
   --bg:#ffffff; --panel:#ffffff; --cabin:#eef4fa; --ink:#14212e; --muted:#566575; --faint:#9aa6b2; --line:#c5d0dc; --seat:#ffffff;
   --accent:#1f5fa8; --accent-ink:#ffffff; --rowno:#35547c; --ok:#2e9d57; --warn:#e2a400; --bad:#d23b33; --bad-soft:#fbdad7; --crew:#d0102a; --crew-soft:#fde3e6; --room-bg:rgba(255,255,255,.55); --crew-tint:rgba(253,227,230,.45);
+  --mon21:#8ed873; --mon27:#9fc5e8; --monb:#b4a7d6;
   color-scheme:light;background:#fff;color:var(--ink);width:794px;max-width:none;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:12px;font-family:var(--sans)}
 .report .blk{background:#fff}
 .report h1{font-size:20px;margin:0 0 2px}
@@ -251,12 +254,11 @@ dialog.wide[open]{display:flex;flex-direction:column}
 .report th,.report td{font-size:12px;padding:5px 8px}
 .report .legend{margin-top:8px;font-size:12px}
 .report .nopdf{display:none}
-.report .rows{--sw:64px;--sg:5px;gap:6px}
-.report .aisle{width:30px}
+.report .rows{--sw:62px;--sg:6px;--ai:44px;--rn:30px;gap:6px}
 .report .seat .s{min-height:46px;font-size:11px;justify-content:flex-start;padding-top:2px}
 .report .seat .nm{display:block;font-family:var(--sans);font-weight:500;font-size:8.5px;line-height:1.15;text-align:center;padding:1px 2px 0;overflow-wrap:anywhere}
-.report .cclabel{height:46px;font-size:12px}
-.report .table{height:34px}
+.report .tbl{height:46px}
+.report .r-deco .tbl{height:30px}
 .report .seat[data-pending] .s{outline:0}
 .report .crewbox>.crewlbl{font-size:20px}
 .report .manifest{min-width:0}
