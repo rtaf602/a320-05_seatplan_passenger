@@ -99,7 +99,7 @@ const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', '
 // ---------- ที่นั่งทั้งลำ A320(05) 76 ที่นั่ง (เรียงจากหัวไปท้าย เหมือนไฟล์ Seat Plan 320(05) (For Admin)) ----------
 const ZONE_NAME = { F: 'FRONT CREW ZONE', A: 'VVIP OA', B: 'VIP OB', C: 'VIP OC', D: 'PASSENGER OD' };
 function seatList_() {
-  const L = [['CC1A', ZONE_NAME.F, 'CC']];   // ห้อง Commander Center (ไม่ถูกกั้น CREW ZONE)
+  const L = [['CC1A', ZONE_NAME.F, 'CC']];   // ห้อง Commander Center: ที่นั่ง Aircraft Commander (เป็นที่นั่งลูกเรือเมื่อกั้น CREW ZONE)
   const add = function (rows, letters, z) {
     rows.forEach(function (r) { letters.split('').forEach(function (c) { L.push([r + c, ZONE_NAME[z], String(r)]); }); });
   };
@@ -113,12 +113,14 @@ function seatList_() {
 const ROWS = ['CC', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '14', '15', '16', '17', '18'];
 const DEFAULT_CREW_FRONT = '1';   // ภารกิจใหม่: กั้นแถว 1 (FRONT CREW ZONE 1D 1E 1F) ไว้ให้ลูกเรือ แอดมินเปลี่ยนได้ในหน้า ADMIN
 const SEAT_ROW = (function () { const o = {}; seatList_().forEach(function (s) { o[s[0]] = s[2]; }); return o; })();
-// CREW ZONE: หัวเครื่อง = แถวแรกถึงแถวที่เลือก, ท้ายเครื่อง = แถวที่เลือกถึงแถวสุดท้าย (ห้อง Mission Commander ไม่ถูกกั้น)
+// CREW ZONE: หัวเครื่อง = แถวแรกถึงแถวที่เลือก, ท้ายเครื่อง = แถวที่เลือกถึงแถวสุดท้าย
+// เมื่อกั้น CREW ZONE (หัวหรือท้ายก็ได้) ที่นั่ง CC 1A ของ Aircraft Commander ถูกกันเป็นที่นั่งลูกเรือด้วย
 function crewRows_(c) {
   const set = {}, fi = ROWS.indexOf(String(c.front || '')), ri = ROWS.indexOf(String(c.rear || ''));
   let i;
   if (fi > 0) for (i = 1; i <= fi; i++) set[ROWS[i]] = 1;
   if (ri > 0) for (i = ri; i < ROWS.length; i++) set[ROWS[i]] = 1;
+  if (fi > 0 || ri > 0) set.CC = 1;
   return set;
 }
 

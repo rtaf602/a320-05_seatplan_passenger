@@ -141,6 +141,7 @@ function pending(mode){mode=mode||view;if(!D)return {info:[],pax:[],crew:false,c
 function crewRows(c){var set={},fi=ROWS.indexOf(c.front),ri=ROWS.indexOf(c.rear),i;
   if(fi>0)for(i=1;i<=fi;i++)set[ROWS[i]]=1;
   if(ri>0)for(i=ri;i<ROWS.length;i++)set[ROWS[i]]=1;
+  if(fi>0||ri>0)set.CC=1;   // กั้น CREW ZONE แล้ว ที่นั่ง CC 1A (Aircraft Commander) เป็นที่นั่งลูกเรือด้วย
   return set}
 function isCrew(id,set){return !!(set||crewRows(getCrew()))[SEAT[id].row]}
 

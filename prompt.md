@@ -77,7 +77,7 @@
 - **ข้อมูลลูกเรือเห็นเฉพาะ ADMIN**: หน้าผู้โดยสาร (รวม PDF/Excel ผู้โดยสาร) ไม่มีตัวเลขลูกเรือ หน้า ADMIN มีช่อง "ลูกเรือกรอกชื่อแล้ว x / y" (y = ที่นั่งใน CREW ZONE)
 - ข้อมูลภารกิจ: ประเภทเครื่องบิน (A320 ล็อกไว้), Sector, ชื่อภารกิจ, เที่ยวบินที่, เส้นทางบิน (IATA), วันที่บิน, GATE, BOARDING TIME, หมายเหตุ Boarding Pass
 - ผังที่นั่ง A320(05) 76 ที่ (กลุ่มซ้าย A B C · ทางเดิน · กลุ่มขวา D E F) เรียงหัว→ท้าย เหมือนไฟล์ For Admin:
-  - FRONT CREW ZONE: ห้อง Commander Center `CC1A` (แสดง "CC 1A", แถว `CC` ไม่ถูกกั้น), 1D 1E 1F
+  - FRONT CREW ZONE: ห้อง Commander Center `CC1A` (แสดง "CC 1A" = ที่นั่ง Aircraft Commander แถว `CC`: เมื่อกั้น CREW ZONE ไม่ว่าหัวหรือท้าย `crewRows`/`crewRows_` ใส่ `CC` ด้วย → เป็นที่นั่งลูกเรือ หักจากที่นั่งคงเหลือ นับใน ลูกเรือ x / y), 1D 1E 1F
   - VVIP OA: 2A, 3D 3F (โต๊ะฝั่งซ้ายแถว 3), 4A
   - VIP OB: 5A 5D 5F, 6A 6D 6F (โต๊ะระหว่างแถว 5-6)
   - VIP OC: 7B 7C 7D 7F, 8B 8C 8D 8F
