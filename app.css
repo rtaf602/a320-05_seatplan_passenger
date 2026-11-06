@@ -62,6 +62,17 @@ td.c.nz{background:var(--crew-soft);color:var(--crew)} td.b.nz{background:var(--
 /* mission info */
 .info{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .info .wide{grid-column:span 2}
+.info .full{grid-column:1 / -1}
+/* ที่นั่งคงเหลือ: ตัวเลขใหญ่ + รายละเอียด */
+.seatsum{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-weight:500}
+.seatsum .big{display:flex;align-items:baseline;gap:6px;font-size:13px;font-weight:600}
+.seatsum .big b{font-family:var(--mono);font-size:26px;line-height:1;color:var(--accent)}
+.seatsum .big.zero b{color:var(--bad)}
+.seatsum .parts{display:flex;flex-wrap:wrap;gap:6px}
+.seatsum .parts span{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.seatsum .parts span b{font-family:var(--mono);color:var(--ink)}
+.seatsum .zones{flex-basis:100%;font-size:12px;color:var(--muted)}
+.seatsum .zones b{font-family:var(--mono);color:var(--ink)}
 @media (max-width:760px){.info{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:420px){.info{grid-template-columns:minmax(0,1fr)}.info .wide{grid-column:auto}}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px;font-weight:600;color:var(--muted)}
@@ -246,6 +257,7 @@ dialog.wide[open]{display:flex;flex-direction:column}
 .report .rinfo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .report .rinfo div{padding:6px 10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
 .report .rinfo .wide{grid-column:span 2}
+.report .rinfo .wide3{grid-column:span 3}
 .report .rinfo small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em}
 .report .rinfo b{font-size:14px;overflow-wrap:anywhere}
 .report .rmeta{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted);margin-top:6px}

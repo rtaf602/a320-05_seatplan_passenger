@@ -550,7 +550,19 @@ function buildZones(host,report,mode){
     sec.appendChild(box);host.appendChild(sec);
   });
 }
-function renderPlan(){buildZones($('zones'),false,view==='admin'?'crew':'pax')}
+function renderPlan(){buildZones($('zones'),false,view==='admin'?'crew':'pax');renderSeatSum()}
+/* ที่นั่งคงเหลือทั้งลำ (ในการ์ดข้อมูลภารกิจ) — นับจากค่าบนหน้าจอ รวมที่แก้ไขแล้วแต่ยังไม่ SAVE */
+function seatSumText(v){return 'จาก '+v.t+' ที่นั่ง · มีชื่อแล้ว '+v.occ+' · CREW ZONE '+v.crew+' · ใช้ไม่ได้ '+v.bad}
+function renderSeatSum(){var host=$('seatSum');if(!host)return;
+  var st=zoneStats(),v=st.sum;host.textContent='';
+  var big=el('div','big'+(v.free?'':' zero'));big.append('ว่าง ');big.appendChild(el('b',null,String(v.free)));big.append(' ที่นั่ง');host.appendChild(big);
+  var parts=el('div','parts');
+  [['ทั้งหมด',v.t],['มีชื่อแล้ว',v.occ],['CREW ZONE',v.crew],['ใช้ไม่ได้',v.bad]].forEach(function(a){var x=el('span');x.append(a[0]+' ');x.appendChild(el('b',null,String(a[1])));parts.appendChild(x)});
+  host.appendChild(parts);
+  var zs=el('div','zones');
+  ZONES.forEach(function(z,i){if(i)zs.append(' · ');zs.append(z.title+' ');zs.appendChild(el('b',null,String(st[z.key].free)))});
+  host.appendChild(zs);
+}
 $('zones').addEventListener('click',function(e){var b=e.target.closest('.seat[data-id]');if(b)openSeat(b.dataset.id)});
 
 /* ----- manifest (passengers, or crew on the ADMIN page) ----- */
@@ -732,6 +744,7 @@ function reportNode(isPreview,mode){
   g.appendChild(infoCell('AIRCRAFT','A320'));g.appendChild(infoCell('SECTOR',getInfo('sectorNo')?'Sector '+getInfo('sectorNo'):''));
   g.appendChild(infoCell('MISSION / ภารกิจ',getInfo('name'),true));g.appendChild(infoCell('FLIGHT',getInfo('flight')));
   g.appendChild(infoCell('ROUTE',getInfo('route')));g.appendChild(infoCell('DATE',getInfo('date')));g.appendChild(infoCell('GATE',getInfo('gate')));g.appendChild(infoCell('BOARDING TIME',getInfo('time')));
+  var sv=zoneStats().sum,sc=infoCell('ที่นั่งคงเหลือ (ผู้โดยสาร)',sv.free+' ที่นั่ง   ('+seatSumText(sv)+')');sc.className='wide3';g.appendChild(sc);
   h.appendChild(g);
   var meta=el('div','rmeta');var b=bkk();
   meta.appendChild(el('span',null,'ออกรายงาน '+b.d+' '+MON[b.M-1]+' '+String(b.y).slice(2)+' / '+p2(b.h)+':'+p2(b.m)+' TH-LT'));
@@ -824,7 +837,8 @@ function excelModel(mode,blank){
     sheetName:crewMode?'Seat Plan (CREW)':'Seat Plan (Pax)',docTitle:'Seat Plan A320(05)',blank:blank,blankRows:32,
     info:[[{label:'AIRCRAFT',val:'A320'},{label:'SECTOR',val:getInfo('sectorNo')?'Sector '+getInfo('sectorNo'):''},{label:'MISSION / ภารกิจ',val:getInfo('name'),span:2}],
       [{label:'FLIGHT',val:getInfo('flight')},{label:'ROUTE',val:getInfo('route')},{label:'DATE',val:getInfo('date')},{label:'GATE',val:getInfo('gate')}],
-      [{label:'BOARDING TIME',val:getInfo('time')}]],
+      [{label:'BOARDING TIME',val:getInfo('time')},(function(){var v=stats.sum,f=blank?{t:v.t,occ:0,crew:v.crew,bad:v.bad,free:v.t-v.crew-v.bad}:v;
+        return {label:'ที่นั่งคงเหลือ (ผู้โดยสาร)',val:f.free+' ที่นั่ง   ('+seatSumText(f)+')',span:3}})()]],
     meta:meta,
     legend:'สัญลักษณ์: ช่องสีฟ้า = มีชื่อแล้ว · ช่องแดงอ่อน × = ที่นั่งใช้ไม่ได้ · เส้นเหลืองหนาใต้ช่อง ! = ที่นั่งขัดข้องแต่ใช้ได้ · ป้าย Monitor สีเขียวอ่อน = จอ 21.5" · สีฟ้า = จอ 27" · สีม่วง = OVHD 12" · สีเหลือง = จอเสื่อม · สีแดง = จอเสีย · กรอบแดง CREW ZONE = กันไว้ให้ลูกเรือ'+(blank?' · ช่องใต้ตัวอักษรที่นั่งไว้กรอกชื่อ':''),
     zones:zones,listTitle:crewMode?'รายชื่อลูกเรือ':'รายชื่อผู้โดยสาร',
