@@ -145,11 +145,15 @@ function crewRows(c){var set={},fi=ROWS.indexOf(c.front),ri=ROWS.indexOf(c.rear)
 function isCrew(id,set){return !!(set||crewRows(getCrew()))[SEAT[id].row]}
 
 /* one category per seat: crew > occupied > unusable > free */
-function zoneStats(){var set=crewRows(getCrew()),T={},sum={t:0,crew:0,occ:0,bad:0,free:0};
-  ZONES.forEach(function(z){T[z.key]={t:0,crew:0,occ:0,bad:0,free:0}});
+/* free = not CREW ZONE and no passenger name. Unusable seats can still take a name, so they count as free;
+   bad = unusable seats outside CREW ZONE that are still free · crewOcc = crew names (shown on ADMIN only) */
+var STAT_KEYS=['t','crew','crewOcc','occ','bad','free'];
+function zoneStats(){var set=crewRows(getCrew()),T={},sum={};STAT_KEYS.forEach(function(k){sum[k]=0});
+  ZONES.forEach(function(z){var o={};STAT_KEYS.forEach(function(k){o[k]=0});T[z.key]=o});
   SEATS.forEach(function(id){var z=T[SEAT[id].zone];z.t++;
-    if(isCrew(id,set))z.crew++;else if(getPax(id))z.occ++;else if(status(id).s===2)z.bad++;else z.free++});
-  ZONES.forEach(function(z){var v=T[z.key];['t','crew','occ','bad','free'].forEach(function(k){sum[k]+=v[k]})});
+    if(isCrew(id,set)){z.crew++;if(getCrewPax(id))z.crewOcc++}
+    else if(getPax(id))z.occ++;else{z.free++;if(status(id).s===2)z.bad++}});
+  ZONES.forEach(function(z){var v=T[z.key];STAT_KEYS.forEach(function(k){sum[k]+=v[k]})});
   T.sum=sum;return T}
 
 /* ---------- time (Thai local time, UTC+7) ---------- */
@@ -523,7 +527,7 @@ function buildZones(host,report,mode){
     var sec=el('section','zone zone-'+z.key),h=el('header'),v=stats[z.key];
     h.appendChild(el('h2',null,z.title));
     var bd=el('span','badge'+(v.free?'':' zero'));bd.append('ที่นั่งว่าง ');bd.appendChild(el('b',null,String(v.free)));
-    bd.title='ที่นั่งว่างสำหรับผู้โดยสาร '+v.free+' ที่นั่ง (ไม่นับที่นั่งที่มีชื่อแล้ว ที่นั่งใช้ไม่ได้ และ CREW ZONE)';h.appendChild(bd);sec.appendChild(h);
+    bd.title='ที่นั่งว่างสำหรับผู้โดยสาร '+v.free+' ที่นั่ง (ไม่นับที่นั่งที่มีชื่อแล้ว และ CREW ZONE · ที่นั่งใช้งานไม่ได้ยังกรอกชื่อได้ จึงนับรวมด้วย)';h.appendChild(bd);sec.appendChild(h);
     var box=el('div','rows'),cbox=null,room=null;
     function put(node,key){
       if(crew[key]){if(!cbox){cbox=el('div','crewbox');cbox.appendChild(el('div','crewlbl','CREW ZONE'));box.appendChild(cbox)}cbox.appendChild(node)}
@@ -551,17 +555,29 @@ function buildZones(host,report,mode){
   });
 }
 function renderPlan(){buildZones($('zones'),false,view==='admin'?'crew':'pax');renderSeatSum()}
-/* ที่นั่งคงเหลือทั้งลำ (ในการ์ดข้อมูลภารกิจ) — นับจากค่าบนหน้าจอ รวมที่แก้ไขแล้วแต่ยังไม่ SAVE */
-function seatSumText(v){return 'จาก '+v.t+' ที่นั่ง · มีชื่อแล้ว '+v.occ+' · CREW ZONE '+v.crew+' · ใช้ไม่ได้ '+v.bad}
-function renderSeatSum(){var host=$('seatSum');if(!host)return;
-  var st=zoneStats(),v=st.sum;host.textContent='';
-  var big=el('div','big'+(v.free?'':' zero'));big.append('ว่าง ');big.appendChild(el('b',null,String(v.free)));big.append(' ที่นั่ง');host.appendChild(big);
-  var parts=el('div','parts');
-  [['ทั้งหมด',v.t],['มีชื่อแล้ว',v.occ],['CREW ZONE',v.crew],['ใช้ไม่ได้',v.bad]].forEach(function(a){var x=el('span');x.append(a[0]+' ');x.appendChild(el('b',null,String(a[1])));parts.appendChild(x)});
-  host.appendChild(parts);
-  var zs=el('div','zones');
-  ZONES.forEach(function(z,i){if(i)zs.append(' · ');zs.append(z.title+' ');zs.appendChild(el('b',null,String(st[z.key].free)))});
-  host.appendChild(zs);
+/* ที่นั่งคงเหลือทั้งลำ: ใต้ข้อมูลภารกิจ (หน้าผู้โดยสาร) / ใต้ช่องกั้น CREW ZONE (หน้า ADMIN) — นับรวมรายการที่ยังไม่ SAVE */
+function seatSumText(v,crewMode){return 'ไม่รวมที่นั่งใช้งานไม่ได้ '+(v.free-v.bad)+' · จาก '+v.t+' ที่นั่ง · มีผู้โดยสาร '+v.occ+
+  (crewMode?' · ลูกเรือกรอกชื่อแล้ว '+v.crewOcc+' / '+v.crew:'')+' · ที่นั่งว่างที่ใช้งานไม่ได้ '+v.bad}
+function renderSeatSum(){$('seatSum').textContent='';$('seatSumA').textContent='';if(!M)return;
+  var adm=view==='admin',host=$(adm?'seatSumA':'seatSum'),T=zoneStats(),s=T.sum,pend=pending(adm?'admin':'pax').n>0;
+  /* 2 แบบ: รวมที่นั่งใช้งานไม่ได้ (ยังกรอกชื่อได้) และ ไม่รวมที่นั่งใช้งานไม่ได้ */
+  var mains=el('div','ss-mains');
+  [['รวมที่นั่งใช้งานไม่ได้',s.free,''],['ไม่รวมที่นั่งใช้งานไม่ได้',s.free-s.bad,' alt']].forEach(function(x){
+    var m=el('div','ss-main'+x[2]+(x[1]?'':' zero'));m.appendChild(el('small',null,'ที่นั่งคงเหลือ'));m.appendChild(el('em',null,x[0]));
+    m.appendChild(el('b',null,String(x[1])));m.appendChild(el('span',null,'จาก '+s.t+' ที่นั่ง'));mains.appendChild(m)});
+  host.appendChild(mains);
+  var g=el('div','ss-grid'),chips=[['มีผู้โดยสาร',String(s.occ),'occ']];
+  if(adm)chips.push(['ลูกเรือกรอกชื่อแล้ว',s.crewOcc+' / '+s.crew,'crew']);   // ข้อมูลลูกเรือเห็นเฉพาะ ADMIN
+  chips.push(['ที่นั่งว่างที่ใช้งานไม่ได้',String(s.bad),'bad']);
+  chips.forEach(function(x){var c=el('div','ss-item '+x[2]);c.appendChild(el('small',null,x[0]));c.appendChild(el('b',null,x[1]));g.appendChild(c)});
+  host.appendChild(g);
+  var z=el('div','ss-zones');
+  ZONES.forEach(function(zz){var v=T[zz.key],c=el('span','ss-z'+(v.free?'':' zero'));
+    c.appendChild(el('span',null,zz.title));c.appendChild(el('b',null,String(v.free)));
+    if(v.bad)c.appendChild(el('i',null,'ไม่รวมใช้ไม่ได้ '+(v.free-v.bad)));
+    c.title='ที่นั่งคงเหลือ '+v.free+' (รวมที่นั่งใช้งานไม่ได้) · '+(v.free-v.bad)+' (ไม่รวมที่นั่งใช้งานไม่ได้)';z.appendChild(c)});
+  host.appendChild(z);
+  if(pend)host.appendChild(el('p','ss-note','รวมรายการที่ยังไม่ SAVE'));
 }
 $('zones').addEventListener('click',function(e){var b=e.target.closest('.seat[data-id]');if(b)openSeat(b.dataset.id)});
 
@@ -617,8 +633,8 @@ function openSeat(id){
   $('dSub').textContent=(pend?'มีการแก้ไขที่ยังไม่ SAVE · ':'')+(sv&&sv.at?'บันทึกล่าสุด '+[sv.by,sv.at].filter(Boolean).join(' · '):'ยังไม่มีการบันทึกที่นั่งนี้');
   var canEdit,msg=[],bad=false;
   if(mode==='crew'){canEdit=crew&&!closed();if(!crew){msg.push('ที่นั่งนี้ไม่อยู่ใน CREW ZONE ข้อมูลลูกเรือกรอกได้เฉพาะที่นั่งใน CREW ZONE');bad=true}}
-  else{canEdit=!crew&&st.s!==2&&!closed();if(crew){msg.push('ที่นั่งนี้อยู่ใน CREW ZONE กันไว้ให้ลูกเรือ ผู้โดยสารกรอกไม่ได้');bad=true}}
-  if(st.s===2){msg.push('ที่นั่งนี้ใช้งานไม่ได้'+(st.note?' : '+st.note:'')+(mode==='pax'?' กรอกผู้โดยสารไม่ได้':''));bad=true}
+  else{canEdit=!crew&&!closed();if(crew){msg.push('ที่นั่งนี้อยู่ใน CREW ZONE กันไว้ให้ลูกเรือ ผู้โดยสารกรอกไม่ได้');bad=true}}
+  if(st.s===2){msg.push('ที่นั่งนี้ใช้งานไม่ได้'+(st.note?' : '+st.note:'')+' (ยังกรอกชื่อได้)');bad=true}
   else if(st.s===1)msg.push('ที่นั่งนี้มีข้อขัดข้องแต่ยังใช้ได้'+(st.note?' : '+st.note:''));
   if(SEAT[id].mon&&st.m)msg.push('จอ Monitor '+(st.m===2?'เสีย':'เสื่อมสภาพ')+(status(id).note&&!st.s?' : '+st.note:''));
   if(closed())msg.push('ภารกิจปิดแล้ว ดูได้อย่างเดียว');
@@ -744,7 +760,7 @@ function reportNode(isPreview,mode){
   g.appendChild(infoCell('AIRCRAFT','A320'));g.appendChild(infoCell('SECTOR',getInfo('sectorNo')?'Sector '+getInfo('sectorNo'):''));
   g.appendChild(infoCell('MISSION / ภารกิจ',getInfo('name'),true));g.appendChild(infoCell('FLIGHT',getInfo('flight')));
   g.appendChild(infoCell('ROUTE',getInfo('route')));g.appendChild(infoCell('DATE',getInfo('date')));g.appendChild(infoCell('GATE',getInfo('gate')));g.appendChild(infoCell('BOARDING TIME',getInfo('time')));
-  var sv=zoneStats().sum,sc=infoCell('ที่นั่งคงเหลือ (ผู้โดยสาร)',sv.free+' ที่นั่ง   ('+seatSumText(sv)+')');sc.className='wide3';g.appendChild(sc);
+  var sv=zoneStats().sum,sc=infoCell('ที่นั่งคงเหลือ (รวมที่นั่งใช้งานไม่ได้)',sv.free+' ที่นั่ง   ('+seatSumText(sv,crewMode)+')');sc.className='wide3';g.appendChild(sc);
   h.appendChild(g);
   var meta=el('div','rmeta');var b=bkk();
   meta.appendChild(el('span',null,'ออกรายงาน '+b.d+' '+MON[b.M-1]+' '+String(b.y).slice(2)+' / '+p2(b.h)+':'+p2(b.m)+' TH-LT'));
@@ -820,7 +836,7 @@ function excelModel(mode,blank){
   var seatObj=function(id,label,mon){var st=status(id),crew=!!set[SEAT[id].row];
     var p=crew?(crewMode?getCrewPax(id):null):getPax(id);
     return {label:label,s:st.s,mon:mon?st.m:null,crew:crew,name:p?shortName(p):''}};
-  var zones=ZONES.map(function(z){var v=stats[z.key],free=blank?(v.t-v.crew-v.bad):v.free;
+  var zones=ZONES.map(function(z){var v=stats[z.key],free=blank?(v.t-v.crew):v.free;
     return {title:z.title,free:free,lines:z.lines.map(function(ln){
       return {t:ln.t,n:ln.n?String(ln.n):'',crew:!!set[ln.key],room:!!ln.room,cells:ln.cells.map(function(c){
         var o={side:c.side,c:c.c,span:c.span};
@@ -837,10 +853,11 @@ function excelModel(mode,blank){
     sheetName:crewMode?'Seat Plan (CREW)':'Seat Plan (Pax)',docTitle:'Seat Plan A320(05)',blank:blank,blankRows:32,
     info:[[{label:'AIRCRAFT',val:'A320'},{label:'SECTOR',val:getInfo('sectorNo')?'Sector '+getInfo('sectorNo'):''},{label:'MISSION / ภารกิจ',val:getInfo('name'),span:2}],
       [{label:'FLIGHT',val:getInfo('flight')},{label:'ROUTE',val:getInfo('route')},{label:'DATE',val:getInfo('date')},{label:'GATE',val:getInfo('gate')}],
-      [{label:'BOARDING TIME',val:getInfo('time')},(function(){var v=stats.sum,f=blank?{t:v.t,occ:0,crew:v.crew,bad:v.bad,free:v.t-v.crew-v.bad}:v;
-        return {label:'ที่นั่งคงเหลือ (ผู้โดยสาร)',val:f.free+' ที่นั่ง   ('+seatSumText(f)+')',span:3}})()]],
+      [{label:'BOARDING TIME',val:getInfo('time')},(function(){var v=stats.sum,f=v;
+        if(blank)f={t:v.t,occ:0,crew:v.crew,crewOcc:0,free:v.t-v.crew,bad:SEATS.filter(function(id){return !set[SEAT[id].row]&&status(id).s===2}).length};
+        return {label:'ที่นั่งคงเหลือ (รวมที่นั่งใช้งานไม่ได้)',val:f.free+' ที่นั่ง   ('+seatSumText(f,crewMode)+')',span:3}})()]],
     meta:meta,
-    legend:'สัญลักษณ์: ช่องสีฟ้า = มีชื่อแล้ว · ช่องแดงอ่อน × = ที่นั่งใช้ไม่ได้ · เส้นเหลืองหนาใต้ช่อง ! = ที่นั่งขัดข้องแต่ใช้ได้ · ป้าย Monitor สีเขียวอ่อน = จอ 21.5" · สีฟ้า = จอ 27" · สีม่วง = OVHD 12" · สีเหลือง = จอเสื่อม · สีแดง = จอเสีย · กรอบแดง CREW ZONE = กันไว้ให้ลูกเรือ'+(blank?' · ช่องใต้ตัวอักษรที่นั่งไว้กรอกชื่อ':''),
+    legend:'สัญลักษณ์: ช่องสีฟ้า = มีชื่อแล้ว · ช่องแดงอ่อน × = ที่นั่งใช้ไม่ได้ (ยังกรอกชื่อได้) · เส้นเหลืองหนาใต้ช่อง ! = ที่นั่งขัดข้องแต่ใช้ได้ · ป้าย Monitor สีเขียวอ่อน = จอ 21.5" · สีฟ้า = จอ 27" · สีม่วง = OVHD 12" · สีเหลือง = จอเสื่อม · สีแดง = จอเสีย · กรอบแดง CREW ZONE = กันไว้ให้ลูกเรือ'+(blank?' · ช่องใต้ตัวอักษรที่นั่งไว้กรอกชื่อ':''),
     zones:zones,listTitle:crewMode?'รายชื่อลูกเรือ':'รายชื่อผู้โดยสาร',
     list:manifestRows(crewMode?'crew':'pax').map(function(r){return {id:r.id,zone:r.zone,th:thFull(r.p),en:enFull(r.p)}}),
     footer:[getInfo('flight'),getInfo('date'),'Seat Plan A320(05)'].filter(Boolean).join(' · ')

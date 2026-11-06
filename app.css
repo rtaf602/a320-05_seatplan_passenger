@@ -62,17 +62,7 @@ td.c.nz{background:var(--crew-soft);color:var(--crew)} td.b.nz{background:var(--
 /* mission info */
 .info{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .info .wide{grid-column:span 2}
-.info .full{grid-column:1 / -1}
-/* ที่นั่งคงเหลือ: ตัวเลขใหญ่ + รายละเอียด */
-.seatsum{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-weight:500}
-.seatsum .big{display:flex;align-items:baseline;gap:6px;font-size:13px;font-weight:600}
-.seatsum .big b{font-family:var(--mono);font-size:26px;line-height:1;color:var(--accent)}
-.seatsum .big.zero b{color:var(--bad)}
-.seatsum .parts{display:flex;flex-wrap:wrap;gap:6px}
-.seatsum .parts span{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--panel);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.seatsum .parts span b{font-family:var(--mono);color:var(--ink)}
-.seatsum .zones{flex-basis:100%;font-size:12px;color:var(--muted)}
-.seatsum .zones b{font-family:var(--mono);color:var(--ink)}
+
 @media (max-width:760px){.info{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:420px){.info{grid-template-columns:minmax(0,1fr)}.info .wide{grid-column:auto}}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px;font-weight:600;color:var(--muted)}
@@ -122,7 +112,7 @@ select option{color:var(--ink);font-weight:500}
 .seat[data-s="1"] .s::before{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--warn);pointer-events:none}
 .seat[data-s="1"] .s::after{content:"!";position:absolute;top:0;right:3px;font-size:11px;color:var(--warn);font-weight:700}
 .seat.occ[data-s="1"] .s::after{color:#ffd65a}
-.seat[data-s="2"] .s{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);cursor:not-allowed}
+.seat[data-s="2"] .s{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
 .seat[data-s="2"] .s::after{content:"×";position:absolute;top:-1px;right:3px;font-size:13px;font-weight:700}
 .seat.occ[data-s="2"] .s{background:var(--bad);color:#fff}
 .seat.crew{cursor:not-allowed}
@@ -332,3 +322,28 @@ dialog.wide[open]{display:flex;flex-direction:column}
 #gsiBtn{display:flex;justify-content:center;min-height:40px}
 .nsec{margin:6px 0 8px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;font-weight:700;color:var(--ink)}
 #newDlg{width:min(560px,calc(100vw - 32px))}
+
+/* ที่นั่งคงเหลือ (ใต้ข้อมูลภารกิจ และใต้ช่องกั้น CREW ZONE ในหน้า ADMIN) — แบบเดียวกับ A320-03 */
+.seatsum{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center}
+.seatsum:empty{display:none}
+.ss-mains{display:flex;flex-wrap:wrap;gap:8px}
+.ss-main{display:flex;flex-direction:column;align-items:flex-start;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:8px 16px;min-width:150px}
+.ss-main small{font-size:12px;font-weight:600;opacity:.9}
+.ss-main em{font-style:normal;font-size:11px;font-weight:600;opacity:.9}
+.ss-main b{font-family:var(--mono);font-size:32px;line-height:1.1}
+.ss-main span{font-size:12px;opacity:.9}
+.ss-main.zero{background:var(--muted)}
+.ss-main.alt{background:var(--panel);color:var(--ink);border:2px solid var(--accent)}
+.ss-main.alt.zero{border-color:var(--muted);background:var(--panel)}
+.ss-grid{display:flex;flex-wrap:wrap;gap:8px}
+.ss-item{display:flex;flex-direction:column;border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:4px 12px;min-width:96px}
+.ss-item small{font-size:12px;color:var(--muted)}
+.ss-item b{font-family:var(--mono);font-size:18px}
+.ss-item.occ{border-left-color:var(--accent)}.ss-item.crew{border-left-color:var(--crew)}.ss-item.bad{border-left-color:var(--bad)}
+.ss-zones{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.ss-z{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px}
+.ss-z b{font-family:var(--mono);background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:0 8px;min-width:12px;text-align:center}
+.ss-z.zero b{background:var(--muted)}
+.ss-z i{font-style:normal;font-size:11px;color:var(--muted);padding-right:6px}
+.ss-note{grid-column:1/-1;margin:0;font-size:12px;font-weight:600;color:var(--warn)}
+@media (max-width:520px){.seatsum{grid-template-columns:1fr}.ss-mains .ss-main{flex:1 1 0;min-width:0}}
